@@ -1,0 +1,12 @@
+
+PRELIMINAIRES 
+    - L'interpretation est caché alors il faut enlever le commentaire autour (*main();;*)
+
+COMPILATION 
+    - On peut bien executer "make" ou bien ocamlopt -o pf23 $<
+
+EXECUTION 
+    - ./pf23 filename.pf 
+        pour une interpretation du fichier filename.pf 
+    - ./pf23
+        pour une interpretation ligne par ligne
