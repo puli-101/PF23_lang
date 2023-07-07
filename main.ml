@@ -378,7 +378,7 @@ let fileReader() =
 let main() =
   if (Array.length Sys.argv) = 1 then 
     lineInterpreter()
-  else 
+  else  
     try fileReader() with | _ -> let _ = print_string "Runtime error\n" in -1;;
 
 (*Enlever commentaire pour tester l'interpretation*)
