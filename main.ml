@@ -300,14 +300,14 @@ On evalue recursivement les nouvelles definitions
 (au lieu de les remplacer par leur definition dans le programme)
 On mantient aussi une pile de dictionnaires pour limiter la portee de certaines nouvelles mots
 *)
-let rec eval (dic_stk:dico list) (stk:stack) (p:prog) : stack =
+let rec eval (dic_stk:dico list) (stk:stack) (p:prog) : (stack*dico) =
   (*tete et le reste de la pile de dictionnaires*)
   let (head,body) = match dic_stk with 
     | current::r -> (current,r) 
     | _ -> raise(Invalid_argument "eval")
   in
   match p with 
-  | [] -> stk
+  | [] -> stk,head
   (*Manipulation des nouvelles definitions*)
   | MOT(":")::MOT(";")::r | MOT(":")::MOT(_)::MOT(";")::r -> 
       (*on pourrait faire aussi eval dic stk r pour ignorer les def vides*)
@@ -334,7 +334,7 @@ let rec eval (dic_stk:dico list) (stk:stack) (p:prog) : stack =
       (*recherche du mot*)
       let prg = (lookup nom head) in
       (*On evalue recursivement le mot a partir de la pile actuel et on empile une nouvelle couche dans la pile des dico*)
-      let new_stack = eval (head::dic_stk) stk prg in 
+      let new_stack,_ = eval (head::dic_stk) stk prg in 
       (*On continue l'execution en fonction de la nouvelle pile*)
       eval dic_stk new_stack remainder 
   | elt::r -> eval dic_stk (step stk elt) r;;
@@ -362,28 +362,30 @@ let jeux_de_test = [
 
 (* Ajouter un commentaire (de la ligne 346 a 389) 
   chacher l'interpretation *)
-(*
+
 (* *** EXTRA : Interaction avec l'utilisateur ** *)
 (*Lecture ligne par ligne depuis le terminal*)
 let lineInterpreter() =
   let _ = print_string "PF23 interpreter - version 0.9" ; print_newline() in
-    let rec loop (stk:stack) : int = 
+    let rec loop (stk:stack) (dic:dico) : int = 
       let _ = print_string ">>> " in 
       let code = String.uppercase_ascii (read_line()) in 
       if code = "QUIT" || code = "EXIT" then 
         0
       else 
-        let new_stk = 
-          try eval [empty] stk (parse (code)) 
+        (* on enchaine le dernier etat de la pile
+           et le dernier dictionnaire de mots*)
+        let new_stk, new_dico = 
+          try eval [dic] stk (parse (code)) 
           with 
-            | Empty_stack -> let _ = print_string "Error: empty stack\n" in stk
-            | _ -> let _ = print_string "Syntax error\n" in stk
+            | Empty_stack -> let _ = print_string "Error: empty stack\n" in stk,dic
+            | _ -> let _ = print_string "Syntax error\n" in stk,dic
         in 
         let txt = text new_stk in 
         let _ = print_string ("[stk] " ^ txt ^ "\n") in 
-        loop new_stk
+        loop new_stk new_dico
     in
-    loop [];;
+    loop [] empty;;
 
 (* Lecture et execution d'un fichier *)
 let fileReader() =
@@ -391,7 +393,7 @@ let fileReader() =
   let chan = open_in_bin Sys.argv.(1) in
   let contents = really_input_string chan (in_channel_length chan) in
   let _ = close_in chan in 
-  let stk = 
+  let stk,_ = 
     try eval [empty] [] (parse (String.uppercase_ascii contents)) with | _ -> raise(Runtime_error) 
     (*Peut etre plus tard on pourrait implementer une distinction de cas d'erreurs d'exec plus precise*)
   in
@@ -407,4 +409,3 @@ let main() =
 
 
 main();;
-*)

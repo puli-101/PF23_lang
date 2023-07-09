@@ -10,3 +10,6 @@ EXECUTION
         pour une interpretation du fichier filename.pf 
     - ./pf23
         pour une interpretation ligne par ligne depuis le terminal
+    - On peut ecrire de phrases entieres dans levaluation ligne par ligne
+        ex
+            : FIB DUP 1 < IF dRop 0 else DUP 1 = if Else DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; SCAN FIB PRINT
