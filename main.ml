@@ -341,6 +341,8 @@ let jeux_de_test = [
   ];;
 
 
+(* Ajouter un commentaire (de la ligne 346 a 389) 
+  chacher l'interpretation *)
 
 (* *** EXTRA : Interaction avec l'utilisateur ** *)
 (*Lecture ligne par ligne depuis le terminal*)
@@ -369,7 +371,8 @@ let fileReader() =
   let contents = really_input_string chan (in_channel_length chan) in
   let _ = close_in chan in 
   let stk = 
-    try eval empty [] (parse contents) with | _ -> raise(Runtime_error) (*Peut etre plus tard distinction des cas plus precises*)
+    try eval empty [] (parse contents) with | _ -> raise(Runtime_error) 
+    (*Peut etre plus tard on pourrait implementer une distinction de cas d'erreurs d'exec plus precise*)
   in
   let txt = text stk in
   let _ = print_string ("[stk] " ^ txt ^ "\n") in 
@@ -381,5 +384,6 @@ let main() =
   else  
     try fileReader() with | _ -> let _ = print_string "Runtime error\n" in -1;;
 
-(*Enlever commentaire pour tester l'interpretation*)
+
 main();;
+
