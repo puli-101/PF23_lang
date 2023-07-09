@@ -34,12 +34,8 @@
 exception Empty_stack;;
 exception Runtime_error;;
 
-type bin_op = LESS_T | GREATER_T | EQUALS | DIFF
-            | PLUS | MINUS | MULT | DIV;; 
-type stack_op = DUP | DROP | SWAP | ROT;;
-
-type operation = BINARY of bin_op
-               | STACK of stack_op ;;
+type operation = BINARY of string
+               | STACK of string ;;
                
 type constant = BOOL of bool | INT of int;;
  
@@ -49,18 +45,8 @@ type element = OP of operation | CST of constant | MOT of string ;;
 
 let to_string (x:element) : string = 
   match x with
-  | OP(STACK(DUP)) -> "DUP"
-  | OP(STACK(DROP)) -> "DROP"
-  | OP(STACK(SWAP)) -> "SWAP"
-  | OP(STACK(ROT)) -> "ROT"
-  | OP(BINARY(PLUS)) -> "+"
-  | OP(BINARY(MINUS)) -> "-"
-  | OP(BINARY(DIV)) -> "/"
-  | OP(BINARY(MULT)) -> "*"
-  | OP(BINARY(LESS_T)) -> "<"
-  | OP(BINARY(GREATER_T)) -> ">"
-  | OP(BINARY(EQUALS)) -> "=" 
-  | OP(BINARY(DIFF)) -> "<>" 
+  | OP(STACK(str)) -> str
+  | OP(BINARY(str)) -> str
   | MOT(str) -> str
   | CST(INT(n)) -> string_of_int n
   | CST(BOOL(true)) -> "TRUE"
@@ -68,20 +54,12 @@ let to_string (x:element) : string =
 
 let of_string (s:string) : element =
   match s with
-  | "DUP" -> OP(STACK(DUP)) 
-  | "DROP" -> OP(STACK(DROP)) 
-  | "SWAP" -> OP(STACK(SWAP)) 
-  | "ROT" -> OP(STACK(ROT)) 
-  | "+" -> OP(BINARY(PLUS))
-  | "-" -> OP(BINARY(MINUS))
-  | "/" -> OP(BINARY(DIV))
-  | "*" -> OP(BINARY(MULT))
-  | "<" -> OP(BINARY(LESS_T))
-  | ">" -> OP(BINARY(GREATER_T))
-  | "=" -> OP(BINARY(EQUALS))
-  | "<>" -> OP(BINARY(DIFF))
-  | "TRUE" -> CST(BOOL(true))
-  | "FALSE" -> CST(BOOL(false))
+  | "DUP" | "DROP" | "SWAP" | "ROT" 
+  | "dup" | "drop" | "swap" | "rot" -> OP(STACK(s))  
+  | "+" | "-" | "/" | "*"  
+  | "<" | ">" | "=" | "<>"-> OP(BINARY(s))
+  | "TRUE"  | "true"-> CST(BOOL(true))
+  | "FALSE" | "false" -> CST(BOOL(false))
   | _ -> 
       try 
         CST(INT(int_of_string s))
@@ -136,7 +114,7 @@ type stack = element list;;
 (* FONCTIONS AUXILIERES D'EVALUATION *)
 
 (*Limitations : on ne peut pas comparer deux booleans*)
-let eval_binop (stk:stack) (op:bin_op): stack =
+let eval_binop (stk:stack) (op:string): stack =
   (*Extraction des deux constantes dans le sommet de la pile*)
   let (val1,val2, stk') = match stk with
     | CST(INT(x))::CST(INT(y))::r -> (x,y,r) 
@@ -145,35 +123,37 @@ let eval_binop (stk:stack) (op:bin_op): stack =
   in
   (*Evaluation de l'operateur*)
   let res = match op with
-    | EQUALS -> (CST(BOOL(val1 = val2)))
-    | GREATER_T -> (CST(BOOL(val1 < val2)))
-    | LESS_T -> (CST(BOOL(val1 > val2)))
-    | DIFF -> (CST(BOOL(val1 <> val2))) 
-    | PLUS -> (CST(INT(val1 + val2)))
-    | MINUS -> (CST(INT(val2 - val1)))
-    | MULT -> (CST(INT(val1 * val2)))
-    | DIV -> (CST(INT(val2 / val1))) 
+    | "=" -> (CST(BOOL(val1 = val2)))
+    | ">" -> (CST(BOOL(val1 < val2)))
+    | "<" -> (CST(BOOL(val1 > val2)))
+    | "<>" -> (CST(BOOL(val1 <> val2))) 
+    | "+" -> (CST(INT(val1 + val2)))
+    | "-" -> (CST(INT(val2 - val1)))
+    | "*" -> (CST(INT(val1 * val2)))
+    | "/" -> (CST(INT(val2 / val1))) 
+    | _ -> raise(Invalid_argument "eval_binop")
   in res::stk';;
 
 (*Evaluation des operation de stack tq il est precise dans l'enonce*)
-let eval_stackop (stk:stack) (op:stack_op) : stack = 
+let eval_stackop (stk:stack) (op:string) : stack = 
   match op with
-  | DUP -> 
+  | "DUP" | "dup" -> 
       (match stk with
        | elt::r -> elt::stk
        | _ -> raise(Empty_stack))
-  | DROP -> 
+  | "DROP" | "drop" -> 
       (match stk with
        | elt::r -> r
        | _ -> raise(Empty_stack))
-  | SWAP -> 
+  | "SWAP" | "swap" -> 
       (match stk with
        | e1::e2::r -> e2::e1::r
        | _ -> raise(Empty_stack))
-  | ROT -> 
+  | "ROT" | "rot" -> 
       (match stk with
        | a::b::c::r -> b::c::a::r
-       | _ -> raise(Empty_stack));;
+       | _ -> raise(Empty_stack))
+  | _ -> raise(Invalid_argument "eval_stackop");;
 
 (* [step stk e] exécute l'élément [e] dans la pile [stk] 
    et retourne la pile résultante *)
@@ -246,7 +226,7 @@ let filter_out_if (b:bool) (prg:prog) : prog =
   let rec loop (prg':prog) (toggle:bool) (acc:prog) (depth:int) : prog = 
     match prg' with
     | [] -> raise(Failure "filter_out_if")
-    | MOT("THEN")::r ->
+    | MOT("THEN")::r | MOT("then")::r ->
         (*chaque then et endif decremente le niveau d'imbrication*)
         if depth = 0 then 
           (List.rev acc)@r 
@@ -254,14 +234,14 @@ let filter_out_if (b:bool) (prg:prog) : prog =
           loop r toggle (MOT("THEN")::acc) (depth - 1)
         else 
           loop r toggle acc (depth - 1)
-    | MOT("ENDIF")::r ->
+    | MOT("ENDIF")::r | MOT("endif")::r ->
         if depth = 0 then 
           (List.rev acc)@r 
         else if toggle then
           loop r toggle (MOT("ENDIF")::acc) (depth - 1)
         else 
           loop r toggle acc (depth - 1)
-    | MOT("ELSE")::r -> 
+    | MOT("ELSE")::r | MOT("else")::r -> 
         (*s'il s'agit du niveau actuel alors on change le mode du parcours*)
         if depth = 0 then 
           loop r (not toggle) acc 0
@@ -269,7 +249,7 @@ let filter_out_if (b:bool) (prg:prog) : prog =
           loop r toggle (MOT("ELSE")::acc) depth
         else 
           loop r toggle acc depth
-    | MOT("IF")::r -> 
+    | MOT("IF")::r | MOT("if")::r -> 
         (*chaque if augmente le niveau d'imbrication*)
         if toggle then
           loop r toggle (MOT("IF")::acc) (depth + 1)
@@ -301,7 +281,7 @@ let rec eval (dic:dico) (stk:stack) (p:prog) : stack =
       let (new_dico,new_prg) = extract_new_definition nom r dic in
       eval new_dico stk new_prg 
   (*Execution de IF*)
-  | MOT("IF")::r -> 
+  | MOT("IF")::r | MOT("if")::r  -> 
       let (value, new_stack) = match stk with 
         | CST(BOOL(b))::r -> (b,r)
         | _ -> raise(Failure "eval")
@@ -335,7 +315,7 @@ let fib n =
 (* *********** Question 7 *********** *)
 
 let jeux_de_test = [ 
-    (": FACT DUP 1 > IF DUP 1 - FACT * THEN ; 6 FACT", "720");
+    (": fact dup 1 > if dup 1 - fact * then ; 6 fact", "720");
     (": FIB DUP 1 < IF DROP 0 ELSE DUP 1 = IF ELSE DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; 10 FIB", "55");
     (": SUM DUP 1 > IF DUP 1 - SUM + THEN ; 10 SUM", "55")
   ];;
@@ -343,7 +323,7 @@ let jeux_de_test = [
 
 (* Ajouter un commentaire (de la ligne 346 a 389) 
   chacher l'interpretation *)
-
+(*
 (* *** EXTRA : Interaction avec l'utilisateur ** *)
 (*Lecture ligne par ligne depuis le terminal*)
 let lineInterpreter() =
@@ -354,7 +334,7 @@ let lineInterpreter() =
       if code = "quit" || code = "exit" then 
         0
       else 
-        let new_stk = eval empty stk (parse code) in 
+        let new_stk = eval empty stk (parse (String.uppercase_ascii code)) in 
         let txt = text new_stk in 
         let _ = print_string ("[stk] " ^ txt ^ "\n") in 
         loop new_stk
@@ -371,7 +351,7 @@ let fileReader() =
   let contents = really_input_string chan (in_channel_length chan) in
   let _ = close_in chan in 
   let stk = 
-    try eval empty [] (parse contents) with | _ -> raise(Runtime_error) 
+    try eval empty [] (parse (String.uppercase_ascii contents)) with | _ -> raise(Runtime_error) 
     (*Peut etre plus tard on pourrait implementer une distinction de cas d'erreurs d'exec plus precise*)
   in
   let txt = text stk in
@@ -386,4 +366,4 @@ let main() =
 
 
 main();;
-
+*)

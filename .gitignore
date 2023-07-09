@@ -2,3 +2,7 @@ blank_pro*
 projet*
 q1
 test*
+*.cmi
+*.cmx
+*.o
+pf23
