@@ -54,7 +54,8 @@ let to_string (x:element) : string =
 let of_string (s:string) : element =
   match s with
   | "DUP" | "DROP" | "SWAP" | "ROT" 
-  | "dup" | "drop" | "swap" | "rot" -> OP(STACK(s))  
+  | "dup" | "drop" | "swap" | "rot" 
+  | "empty?" | "EMPTY?" -> OP(STACK(s))  
   | "+" | "-" | "/" | "*"  
   | "<" | ">" | "=" | "<>"-> OP(BINARY(s))
   | "TRUE"  | "true"-> CST(BOOL(true))
@@ -137,7 +138,7 @@ let eval_binop (stk:stack) (op:string): stack =
         | _ -> raise(Invalid_argument "eval_binop")
       in 
       res::stk'
-    (*CAS comparaison 2 booleans*)
+    (*CAS comparaison 2 booleens*)
     | CST(BOOL(val1))::CST(BOOL(val2))::stk' ->  
       (*Evaluation de l'operateur*)
       let res = match op with
@@ -168,6 +169,11 @@ let eval_stackop (stk:stack) (op:string) : stack =
       (match stk with
        | a::b::c::r -> b::c::a::r
        | _ -> raise(Empty_stack))
+  (*test si stk est vide*)
+  | "EMPTY?" | "empty?" ->
+      (match stk with
+         | [] -> CST(BOOL(true))::[]
+         | _ -> CST(BOOL(false))::stk)
   | _ -> raise(Invalid_argument "eval_stackop");;
 
 (*Evaluation de print et scan*)
@@ -288,7 +294,7 @@ let filter_out_if (b:bool) (prg:prog) : prog =
         else 
           loop r toggle acc (depth - 1)
     | MOT("ELSE")::r | MOT("else")::r -> 
-        (*s'il s'agit du niveau actuel alors on change le mode du parcours*)
+        (*s'il s'agit du niveau actuel alors on change le mode de la boucle*)
         if depth = 0 then 
           loop r (not toggle) acc 0
         else if toggle then
@@ -370,9 +376,25 @@ let fib n =
 (* *********** Question 7 *********** *)
 
 let jeux_de_test = [ 
+    (*operateurs booleens*)
+    (": NOT if FALSE else TRUE endif ; true NOT false NOT", "TRUE FALSE");
+    (": AND IF 1 ELSE 0 ENDIF SWAP IF 1 ELSE 0 ENDIF * 1 = ; false false and false true and true false and true true and", 
+      "TRUE FALSE FALSE FALSE");
+    (": OR if drop true else if true else false endif endif ; false false OR true false OR false true OR true true OR", 
+      "TRUE TRUE TRUE FALSE");
+    (*comparaison*)
+    (": geq dup rot swap dup rot < rot = IF drop true ELSE IF true ELSE false ENDIF ENDIF ; 10 7 geq 10 10 geq 7 10 geq",
+      "FALSE TRUE TRUE");
+    (*recursivite*)
     (": fact dup 1 > if dup 1 - fact * then ; 6 fact", "720");
+    (": SUM DUP 1 > IF DUP 1 - SUM + THEN ; 11 SUM", "66");
+    (": MCARTHY  DUP 100 > IF 10 - ELSE 11 + MCARTHY MCARTHY ENDIF ; 87 mcarthy 99 mcarthy", "91 91");
+    (*double recursion*)
     (": FIB DUP 1 < IF DROP 0 ELSE DUP 1 = IF ELSE DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; 10 FIB", "55");
-    (": SUM DUP 1 > IF DUP 1 - SUM + THEN ; 10 SUM", "55")
+    (": ACKER swap dup 0 = IF drop 1 + ELSE swap dup 0 = IF drop 1 swap 1 - swap ACKER ELSE swap dup 1 - rot swap 1 - ACKER ACKER ENDIF ENDIF 
+        ; 3 2 acker 2 4 acker", "11 29"); (*Ackerman(m,n) <-> m n ACKER*)
+    (*extra*)
+    (": FLUSH empty? IF ELSE drop flush ENDIF ; 10 10 20 \"hello\" 1 2 FLUSH", "")
   ];;
 
 
@@ -410,18 +432,43 @@ let fileReader() =
   let contents = really_input_string chan (in_channel_length chan) in
   let _ = close_in chan in 
   let stk,_ = 
-    try eval [empty] [] (parse (String.uppercase_ascii contents)) with | _ -> raise(Runtime_error) 
+    try eval [empty] [] (parse (String.uppercase_ascii contents)) 
+    with | _ -> raise(Runtime_error) 
     (*Peut etre plus tard on pourrait implementer une distinction de cas d'erreurs d'exec plus precise*)
   in
   let txt = text stk in
   let _ = print_string ("[stk] " ^ txt ^ "\n") in 
   0;;
 
-let main() =
+(*Testeur du jeu de tests*)
+let rec tester (test_list:(string*string) list): bool =
+  match test_list with 
+  | [] -> true 
+  | (code,res)::body ->
+    let stk,_ = 
+      try 
+        eval [empty] [] (parse (String.uppercase_ascii code)) 
+      with | _ -> raise(Runtime_error) 
+    in 
+    let return = text stk
+    in
+    (*on compare la pile finale avec le resultat attendu*)
+    if return = res then 
+      tester(body)
+    else
+      let 
+        _ = print_string ("'"^res^"' expected but '"^return^"' found\n")
+      in
+      false;; 
+
+let main(): int =
   if (Array.length Sys.argv) = 1 then 
     lineInterpreter()
-  else  
-    try fileReader() with | _ -> let _ = print_string "Runtime error\n" in -1;;
-
+  else if Sys.argv.(1) <> "test" then 
+    try fileReader() with | _ -> let _ = print_string "Runtime error\n" in -1
+  else if tester jeux_de_test then 
+    let _ = print_string "All tests passed\n" in 0
+  else
+    let _ = print_string "Aborted\n" in -1;;
 
 main();;

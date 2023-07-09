@@ -1,15 +1,13 @@
-
-PRELIMINAIRES 
-    - L'interpretation est caché alors il faut enlever le commentaire autour (*main();;*) dans main.ml
-
 COMPILATION 
     - On peut executer "make" ou bien "ocamlopt -o pf23 main.ml"
 
 EXECUTION 
     - ./pf23 filename.pf 
-        pour une interpretation du fichier filename.pf 
+        pour une evaluation du fichier filename.pf 
     - ./pf23
         pour une interpretation ligne par ligne depuis le terminal
-    - On peut ecrire de phrases entieres dans levaluation ligne par ligne
+    - ./pf23 test
+        pour lancer l'execution du jeu de tests
+    - Des phrases entières peuvent être écrites dans l'évaluation ligne par ligne
         ex
             : FIB DUP 1 < IF dRop 0 else DUP 1 = if Else DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; SCAN FIB PRINT

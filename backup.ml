@@ -5,11 +5,10 @@
  *
  * README
  *
- * Cette version passe tous les tests mais
- * la version finale avec un interpréteur 
- * et une pile de dictionnaires avec un vrai fichier README 
- * et les explications sur les choix d'implémentation 
+ * La version finale avec un evaluateur, une pile de dictionnaires,
+ * un vrai fichier README et les explications sur les choix d'implémentation 
  * est sur moodle
+ * (cette version passe tous les tests quand meme)
  *
  *
  *
@@ -136,7 +135,7 @@ let eval_binop (stk:stack) (op:string): stack =
   (*Extraction des deux constantes dans le sommet de la pile*)
   match stk with
     (*CAS operation entre 2 entiers*)
-    | CST(INT(val1))::CST(INT(val2))::stk' ->  
+  | CST(INT(val1))::CST(INT(val2))::stk' ->  
       (*Evaluation de l'operateur*)
       let res = match op with
         | "=" -> (CST(BOOL(val1 = val2)))
@@ -147,13 +146,13 @@ let eval_binop (stk:stack) (op:string): stack =
         | "-" -> (CST(INT(val2 - val1)))
         | "*" -> (CST(INT(val1 * val2)))
         | "/" -> 
-          if val1 = 0 then raise(Invalid_argument "eval_binop")
-          else (CST(INT(val2 / val1))) 
+            if val1 = 0 then raise(Invalid_argument "eval_binop")
+            else (CST(INT(val2 / val1))) 
         | _ -> raise(Invalid_argument "eval_binop")
       in 
       res::stk'
     (*CAS comparaison 2 booleans*)
-    | CST(BOOL(val1))::CST(BOOL(val2))::stk' ->  
+  | CST(BOOL(val1))::CST(BOOL(val2))::stk' ->  
       (*Evaluation de l'operateur*)
       let res = match op with
         | "=" -> (CST(BOOL(val1 = val2)))
@@ -161,8 +160,8 @@ let eval_binop (stk:stack) (op:string): stack =
         | _ -> raise(Invalid_argument "eval_binop")
       in 
       res::stk'
-    | _::_::r -> raise(Invalid_argument "eval_binop")
-    | _ -> failwith "Error : stack too small";;
+  | _::_::r -> raise(Invalid_argument "eval_binop")
+  | _ -> failwith "Error : stack too small";;
 
 (*Evaluation des operation de stack tq il est precise dans l'enonce*)
 let eval_stackop (stk:stack) (op:string) : stack = 
@@ -382,7 +381,21 @@ let fib n =
 (* *********** Question 7 *********** *)
 
 let jeux_de_test = [ 
-  (": fact dup 1 > if dup 1 - fact * then ; 6 fact", "720");
+    (*OPERATEURS BOOLEENS*)
+  (": NOT IF FALSE ELSE TRUE ENDIF ; TRUE NOT FALSE NOT", "TRUE FALSE");
+  (": AND IF 1 ELSE 0 ENDIF SWAP IF 1 ELSE 0 ENDIF * 1 = ; FALSE FALSE AND FALSE TRUE AND TRUE FALSE AND TRUE TRUE AND", 
+   "TRUE FALSE FALSE FALSE");
+  (": OR IF DROP TRUE ELSE IF TRUE ELSE FALSE ENDIF ENDIF ; FALSE FALSE OR TRUE FALSE OR FALSE TRUE OR TRUE TRUE OR", 
+   "TRUE TRUE TRUE FALSE");
+    (*COMPARAISON*)
+  (": GEQ DUP ROT SWAP DUP ROT < ROT = IF DROP TRUE ELSE IF TRUE ELSE FALSE ENDIF ENDIF ; 10 7 GEQ 10 10 GEQ 7 10 GEQ",
+   "FALSE TRUE TRUE");
+    (*RECURSIVITE*)
+  (": FACT DUP 1 > IF DUP 1 - FACT * THEN ; 6 FACT", "720");
+  (": SUM DUP 1 > IF DUP 1 - SUM + THEN ; 11 SUM", "66");
+  (": MCARTHY  DUP 100 > IF 10 - ELSE 11 + MCARTHY MCARTHY ENDIF ; 87 MCARTHY 99 MCARTHY", "91 91");
+    (*DOUBLE RECURSION*)
   (": FIB DUP 1 < IF DROP 0 ELSE DUP 1 = IF ELSE DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; 10 FIB", "55");
-  (": SUM DUP 1 > IF DUP 1 - SUM + THEN ; 10 SUM", "55")
+  (": ACKER SWAP DUP 0 = IF DROP 1 + ELSE SWAP DUP 0 = IF DROP 1 SWAP 1 - SWAP ACKER ELSE SWAP DUP 1 - ROT SWAP 1 - ACKER ACKER ENDIF ENDIF 
+        ; 3 2 ACKER 2 4 ACKER", "11 29"); (*ACKERMAN(M,N) <-> M N ACKER*) 
 ];;

@@ -1,1 +1,18 @@
 : FIB DUP 1 < IF dRop 0 else DUP 1 = if Else DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; scAn FIB PRINT
+
+: MCARTHY  DUP 100 > IF 10 - ELSE 11 + MCARTHY MCARTHY ENDIF ; 87 MCARTHY 99 MCARTHY
+
+87 MCARTHY 91
+
+(": AND IF 1 ELSE 0 ENDIF SWAP IF 1 ELSE 0 ENDIF * 1 = ; false false and false true and true false and true true", "TRUE FALSE FALSE FALSE")
+
+(": NOT if FALSE else TRUE endif ; true NOT false NOT", "false true")
+(": FLUSH empty? IF ELSE drop flush ENDIF ; 10 10 20 \"hello\" 1 2 FLUSH", "")
+(": geq dup rot swap dup rot < rot = IF drop true ELSE IF true ELSE false ENDIF ENDIF ; 10 7 geq 10 10 geq 7 10 geq","FALSE TRUE TRUE")
+": INF : geq dup rot swap dup rot < rot = IF drop true ELSE IF true ELSE false ENDIF ENDIF ; "x_greater_or_equal_than_y_?" PRINT SCAN SCAN geq iF "x_INF ; INF 
+
+(*Ackerman(m,n) -> m n ACKER
+Ackermann(3,2) = 29*)
+: ACKER swap dup 0 = IF drop 1 + ELSE swap dup 0 = IF drop 1 swap 1 - swap ACKER ELSE swap dup 1 - rot swap 1 - ACKER ACKER ENDIF ENDIF ; 3 2 acker 2 4 acker
+
+(": OR if drop true else if true else false ;","false false OR true false OR false true OR true true OR", "TRUE TRUE TRUE FALSE")
