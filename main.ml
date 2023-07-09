@@ -1,7 +1,5 @@
 (*David Pulido Cornejo 21209533*)
 
-(*NOUVEAUX MOTS EVALUES DANS LE STACK*)
-
 (*
   Sur papier : 
   TUCK (a b c -- a c c b) 
@@ -155,6 +153,38 @@ let eval_stackop (stk:stack) (op:string) : stack =
        | _ -> raise(Empty_stack))
   | _ -> raise(Invalid_argument "eval_stackop");;
 
+(*Evaluation de print et scan*)
+let eval_io (stk:stack) (op:string) :stack = 
+  match op with 
+  | "PRINT" | "print" ->
+    (match stk with 
+      | elt::r -> 
+       (match elt with
+       | CST(BOOL(true)) -> 
+          let _ = print_string "Output: true\n" in r 
+       | CST(BOOL(false)) -> 
+          let _ = print_string "Output: false\n" in r
+       | CST(INT(x)) -> 
+          let _ = print_string "Output: " in
+          let _ = print_int x in
+          let _ = print_string "\n" in r
+       | _ -> 
+          let _ = print_string "(undefined)" in r)
+      | _ -> raise(Empty_stack))
+  | "SCAN" | "scan" ->
+    (let _ = print_string "Input: " in 
+    let str = read_line() in
+    if (String.uppercase_ascii str) = "TRUE" then 
+      CST(BOOL(true))::stk
+    else if (String.uppercase_ascii str) = "FALSE" then 
+      CST(BOOL(false))::stk
+    else 
+      try 
+          CST(INT(int_of_string str))::stk
+      with 
+          _ -> raise(Invalid_argument "eval_io"))
+  | _ -> raise(Invalid_argument "eval_io");;
+
 (* [step stk e] exécute l'élément [e] dans la pile [stk] 
    et retourne la pile résultante *)
 let step (stk:stack) (e:element) : stack =
@@ -290,6 +320,10 @@ let rec eval (dic:dico) (stk:stack) (p:prog) : stack =
       let prg = filter_out_if value r in 
       (*suite d'execution*)
       eval dic new_stack prg
+  | MOT("PRINT")::r |  MOT("print")::r ->
+      eval dic (eval_io stk "PRINT") r
+  | MOT("SCAN")::r |  MOT("scan")::r ->
+    eval dic (eval_io stk "SCAN") r     
   (*Execution de nouvelles mots*)
   | MOT(nom)::remainder ->
       (*recherche du mot*)
@@ -304,7 +338,7 @@ let rec eval (dic:dico) (stk:stack) (p:prog) : stack =
 (* *********** Question 6 *********** *)
 
 let carre n = 
-  Printf.sprintf ": carre DUP * ; %d carre" n
+  Printf.sprintf ": carre dup * ; %d carre" n
 
 (*pour eviter boucles inf. alors fib n = 0 si n < 1*)
 let fib n = 
@@ -330,19 +364,21 @@ let lineInterpreter() =
   let _ = print_string "PF23 interpreter - version 0.9" ; print_newline() in
     let rec loop (stk:stack) : int = 
       let _ = print_string ">>> " in 
-      let code = read_line() in 
-      if code = "quit" || code = "exit" then 
+      let code = String.uppercase_ascii (read_line()) in 
+      if code = "QUIT" || code = "EXIT" then 
         0
       else 
-        let new_stk = eval empty stk (parse (String.uppercase_ascii code)) in 
+        let new_stk = 
+          try eval empty stk (parse (code)) 
+          with 
+            | Empty_stack -> let _ = print_string "Error: empty stack\n" in stk
+            | _ -> let _ = print_string "Syntax error\n" in stk
+        in 
         let txt = text new_stk in 
         let _ = print_string ("[stk] " ^ txt ^ "\n") in 
         loop new_stk
     in
-    try  
-      loop []
-    with 
-      | _ -> let _ = print_string "Syntax error\n" in loop [];;
+    loop [];;
 
 (* Lecture et execution d'un fichier *)
 let fileReader() =
@@ -356,7 +392,7 @@ let fileReader() =
   in
   let txt = text stk in
   let _ = print_string ("[stk] " ^ txt ^ "\n") in 
-  0 
+  0;;
 
 let main() =
   if (Array.length Sys.argv) = 1 then 
