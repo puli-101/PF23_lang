@@ -300,7 +300,12 @@ On evalue recursivement les nouvelles definitions
 (au lieu de les remplacer par leur definition dans le programme)
 On mantient aussi une pile de dictionnaires pour limiter la portee de certaines nouvelles mots
 *)
-let rec eval (dic:dico) (stk:stack) (p:prog) : stack =
+let rec eval (dic_stk:dico list) (stk:stack) (p:prog) : stack =
+  (*tete et le reste de la pile de dictionnaires*)
+  let (head,body) = match dic_stk with 
+    | current::r -> (current,r) 
+    | _ -> raise(Invalid_argument "eval")
+  in
   match p with 
   | [] -> stk
   (*Manipulation des nouvelles definitions*)
@@ -308,8 +313,8 @@ let rec eval (dic:dico) (stk:stack) (p:prog) : stack =
       (*on pourrait faire aussi eval dic stk r pour ignorer les def vides*)
       raise(Failure "eval") 
   | MOT(":")::MOT(nom)::r -> 
-      let (new_dico,new_prg) = extract_new_definition nom r dic in
-      eval new_dico stk new_prg 
+      let (new_dico,new_prg) = extract_new_definition nom r head in
+      eval (new_dico::body) stk new_prg 
   (*Execution de IF*)
   | MOT("IF")::r | MOT("if")::r  -> 
       let (value, new_stack) = match stk with 
@@ -319,20 +324,20 @@ let rec eval (dic:dico) (stk:stack) (p:prog) : stack =
       (*filtrage des blocks apres avoir evalue la condition*)
       let prg = filter_out_if value r in 
       (*suite d'execution*)
-      eval dic new_stack prg
+      eval dic_stk new_stack prg
   | MOT("PRINT")::r |  MOT("print")::r ->
-      eval dic (eval_io stk "PRINT") r
+      eval dic_stk (eval_io stk "PRINT") r
   | MOT("SCAN")::r |  MOT("scan")::r ->
-    eval dic (eval_io stk "SCAN") r     
+    eval dic_stk (eval_io stk "SCAN") r     
   (*Execution de nouvelles mots*)
   | MOT(nom)::remainder ->
       (*recherche du mot*)
-      let prg = (lookup nom dic) in
+      let prg = (lookup nom head) in
       (*On evalue recursivement le mot a partir de la pile actuel et on empile une nouvelle couche dans la pile des dico*)
-      let new_stack = eval dic stk prg in 
+      let new_stack = eval (head::dic_stk) stk prg in 
       (*On continue l'execution en fonction de la nouvelle pile*)
-      eval dic new_stack remainder 
-  | elt::r -> eval dic (step stk elt) r;;
+      eval dic_stk new_stack remainder 
+  | elt::r -> eval dic_stk (step stk elt) r;;
 
 
 (* *********** Question 6 *********** *)
@@ -369,7 +374,7 @@ let lineInterpreter() =
         0
       else 
         let new_stk = 
-          try eval empty stk (parse (code)) 
+          try eval [empty] stk (parse (code)) 
           with 
             | Empty_stack -> let _ = print_string "Error: empty stack\n" in stk
             | _ -> let _ = print_string "Syntax error\n" in stk
@@ -387,7 +392,7 @@ let fileReader() =
   let contents = really_input_string chan (in_channel_length chan) in
   let _ = close_in chan in 
   let stk = 
-    try eval empty [] (parse (String.uppercase_ascii contents)) with | _ -> raise(Runtime_error) 
+    try eval [empty] [] (parse (String.uppercase_ascii contents)) with | _ -> raise(Runtime_error) 
     (*Peut etre plus tard on pourrait implementer une distinction de cas d'erreurs d'exec plus precise*)
   in
   let txt = text stk in
