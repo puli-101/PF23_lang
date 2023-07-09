@@ -35,7 +35,7 @@ exception Runtime_error;;
 type operation = BINARY of string
                | STACK of string ;;
                
-type constant = BOOL of bool | INT of int ;;
+type constant = BOOL of bool | INT of int | STR of string;;
  
 type element = OP of operation | CST of constant | MOT of string ;; 
 
@@ -48,7 +48,8 @@ let to_string (x:element) : string =
   | MOT(str) -> str
   | CST(INT(n)) -> string_of_int n
   | CST(BOOL(true)) -> "TRUE"
-  | CST(BOOL(false)) -> "FALSE";; 
+  | CST(BOOL(false)) -> "FALSE"
+  | CST(STR(str)) -> str;;
 
 let of_string (s:string) : element =
   match s with
@@ -59,10 +60,15 @@ let of_string (s:string) : element =
   | "TRUE"  | "true"-> CST(BOOL(true))
   | "FALSE" | "false" -> CST(BOOL(false))
   | _ -> 
-      try 
-        CST(INT(int_of_string s))
-      with 
-        _ -> MOT(s);;
+      if String.get s 0 = '"' 
+        && String.get s (String.length s - 1) = '"' 
+        && String.length s <> 1 then 
+        CST(STR(s))
+      else 
+        try 
+          CST(INT(int_of_string s))
+        with 
+          _ -> MOT(s);;
 
 
 (* *********** Question 1.c *********** *)
@@ -166,34 +172,33 @@ let eval_stackop (stk:stack) (op:string) : stack =
 
 (*Evaluation de print et scan*)
 let eval_io (stk:stack) (op:string) :stack = 
+  (*cas ecriture...*)
   match op with 
   | "PRINT" | "print" ->
     (match stk with 
-      | elt::r -> 
-       (match elt with
-       | CST(BOOL(true)) -> 
-          let _ = print_string "Output: true\n" in r 
-       | CST(BOOL(false)) -> 
-          let _ = print_string "Output: false\n" in r
-       | CST(INT(x)) -> 
-          let _ = print_string "Output: " in
-          let _ = print_int x in
-          let _ = print_string "\n" in r
-       | _ -> 
-          let _ = print_string "(undefined)" in r)
-      | _ -> raise(Empty_stack))
+        (*extraction du message*)
+        | elt::r -> 
+          let msg = 
+          (match elt with
+            | CST(BOOL(true)) -> 
+              "true"
+            | CST(BOOL(false)) -> 
+              "false"
+            | CST(INT(x)) -> 
+              string_of_int x
+            | CST(STR(s)) -> 
+              s
+            | _ -> 
+              "(undefined)")
+          in
+          (*affichage*)
+          let _ = print_string ("Output: "^msg^" \n") in r
+        | _ -> raise(Empty_stack) )
+  (*Cas lecture...*)
   | "SCAN" | "scan" ->
-    (let _ = print_string "Input: " in 
+    let _ = print_string "Input: " in 
     let str = read_line() in
-    if (String.uppercase_ascii str) = "TRUE" then 
-      CST(BOOL(true))::stk
-    else if (String.uppercase_ascii str) = "FALSE" then 
-      CST(BOOL(false))::stk
-    else 
-      try 
-          CST(INT(int_of_string str))::stk
-      with 
-          _ -> raise(Invalid_argument "eval_io"))
+    (of_string str)::stk
   | _ -> raise(Invalid_argument "eval_io");;
 
 (* [step stk e] exécute l'élément [e] dans la pile [stk] 
