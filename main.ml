@@ -35,7 +35,7 @@ exception Runtime_error;;
 type operation = BINARY of string
                | STACK of string ;;
                
-type constant = BOOL of bool | INT of int;;
+type constant = BOOL of bool | INT of int ;;
  
 type element = OP of operation | CST of constant | MOT of string ;; 
 
@@ -111,26 +111,37 @@ type stack = element list;;
 
 (* FONCTIONS AUXILIERES D'EVALUATION *)
 
-(*Limitations : on ne peut pas comparer deux booleans*)
 let eval_binop (stk:stack) (op:string): stack =
   (*Extraction des deux constantes dans le sommet de la pile*)
-  let (val1,val2, stk') = match stk with
-    | CST(INT(x))::CST(INT(y))::r -> (x,y,r) 
+  match stk with
+    (*CAS operation entre 2 entiers*)
+    | CST(INT(val1))::CST(INT(val2))::stk' ->  
+      (*Evaluation de l'operateur*)
+      let res = match op with
+        | "=" -> (CST(BOOL(val1 = val2)))
+        | ">" -> (CST(BOOL(val1 < val2)))
+        | "<" -> (CST(BOOL(val1 > val2)))
+        | "<>" -> (CST(BOOL(val1 <> val2))) 
+        | "+" -> (CST(INT(val1 + val2)))
+        | "-" -> (CST(INT(val2 - val1)))
+        | "*" -> (CST(INT(val1 * val2)))
+        | "/" -> 
+          if val1 = 0 then raise(Invalid_argument "eval_binop")
+          else (CST(INT(val2 / val1))) 
+        | _ -> raise(Invalid_argument "eval_binop")
+      in 
+      res::stk'
+    (*CAS comparaison 2 booleans*)
+    | CST(BOOL(val1))::CST(BOOL(val2))::stk' ->  
+      (*Evaluation de l'operateur*)
+      let res = match op with
+        | "=" -> (CST(BOOL(val1 = val2)))
+        | "<>" -> (CST(BOOL(val1 <> val2))) 
+        | _ -> raise(Invalid_argument "eval_binop")
+      in 
+      res::stk'
     | _::_::r -> raise(Invalid_argument "eval_binop")
-    | _ -> failwith "Error : stack too small"
-  in
-  (*Evaluation de l'operateur*)
-  let res = match op with
-    | "=" -> (CST(BOOL(val1 = val2)))
-    | ">" -> (CST(BOOL(val1 < val2)))
-    | "<" -> (CST(BOOL(val1 > val2)))
-    | "<>" -> (CST(BOOL(val1 <> val2))) 
-    | "+" -> (CST(INT(val1 + val2)))
-    | "-" -> (CST(INT(val2 - val1)))
-    | "*" -> (CST(INT(val1 * val2)))
-    | "/" -> (CST(INT(val2 / val1))) 
-    | _ -> raise(Invalid_argument "eval_binop")
-  in res::stk';;
+    | _ -> failwith "Error : stack too small";;
 
 (*Evaluation des operation de stack tq il est precise dans l'enonce*)
 let eval_stackop (stk:stack) (op:string) : stack = 

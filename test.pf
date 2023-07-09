@@ -1,1 +1,1 @@
-: FIB DUP 1 < IF dRop 0 else DUP 1 = if Else DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; SCAN FIB PRINT
+: FIB DUP 1 < IF dRop 0 else DUP 1 = if Else DUP 1 - FIB SWAP 2 - FIB + THEN THEN ; scAn FIB PRINT
