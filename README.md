@@ -1,11 +1,11 @@
-#PF23-lang
+#PF23-lang#
 
 Implementation of a programming language inspired by functional programming using OCaml. The syntax is based on Forth and PostScript, which means it is stack-based.
 
-##TYPES
+##TYPES##
 The following types are supported: INT, STRING, BOOL.
 
-##BASIC OPERATION
+##BASIC OPERATION##
 Basic primitive functions include: +, -, /, *, =, <, >, <>.
 
 Furthermore, some stack operations include: SWAP (swaps the top 2 elements of the stack), DROP (removes the element at the top of the stack), DUP (duplicates the top of the stack), ROT (rotates three elements at the top of the stack).
@@ -25,10 +25,12 @@ For example:
 	: FIB DUP 1 < IF DROP 0 ELSE DUP 1 = IF ELSE DUP 1 - FIB SWAP 2 - FIB + THEN THEN; SCAN FIB PRINT
 
 
-COMPILATION 
+##COMPILATION##
+
     - You can execute "make" or "ocamlopt -o pf23 main.ml"
 
-EXECUTION 
+##EXECUTION## 
+
     - ./pf23 filename.pf 
         for evaluating the file filename.pf 
     - ./pf23
